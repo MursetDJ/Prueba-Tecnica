@@ -1,0 +1,23 @@
+{
+  "name": "financial-advance-system",
+  "version": "1.0.0",
+  "description": "Financial advance system for salary advances.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "test": "jest --detectOpenHandles --forceExit"
+  },
+  "jest": {
+    "testTimeout": 30000
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.9.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
