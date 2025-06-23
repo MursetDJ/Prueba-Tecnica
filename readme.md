@@ -43,6 +43,7 @@ b.  **Crear la base de datos y tablas:**
     ```bash
     mysql -u your_mysql_user -p < db/schema.sql
     ```
+
     Reemplaza `your_mysql_user` con tu usuario de MySQL. Te pedirá la contraseña.
 
 c.  **Crear el procedimiento almacenado:**
@@ -51,6 +52,7 @@ c.  **Crear el procedimiento almacenado:**
     ```bash
     mysql -u your_mysql_user -p financial_advance_system < db/stored_procedure.sql
     ```
+    
     Asegúrate de estar apuntando a la base de datos `financial_advance_system`.
 
 ### 2. Configurar Variables de Entorno
