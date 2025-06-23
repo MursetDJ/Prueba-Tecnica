@@ -82,6 +82,7 @@ async function processAdvance(clientId, requestedAmount) {
         if (connection) {
             await connection.rollback();
         }
+        
         console.error('Error al procesar el adelanto:', error.message, error.sqlMessage ? `SQL Message: ${error.sqlMessage}` : '');
         throw new Error(error.sqlMessage || 'Error al procesar la solicitud de adelanto.');
     } finally {

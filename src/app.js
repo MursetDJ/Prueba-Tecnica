@@ -1,9 +1,23 @@
 const { calculateAvailable, processAdvance } = require('./services/advanceService');
-
+const { loginUser, hashPassword } = require('./services/authService'); 
+const db = require('./config/db'); 
 async function runExample() {
     console.log('--- Iniciando Ejemplo de Uso ---');
 
-    // Ejemplo de calculateAvailable
+    let connection;
+    try {
+        connection = await db.getConnection();
+        await connection.execute('DELETE FROM advances WHERE client_id = 1');
+        await connection.execute('UPDATE clients SET status = 0 WHERE id = 3'); // Asegura que Pedro esté habilitado para pruebas
+        console.log('Limpiadas solicitudes de adelanto previas para el cliente 1 y habilitado cliente 3.');
+    } catch (cleanUpError) {
+        console.error('Error during cleanup:', cleanUpError.message);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+    // Ejemplo de processAdvance (cliente Juan Perez, ID: 1)
     const salary = 2000;
     const date = new Date('2026-06-15T12:00:00Z'); // 15 de junio de 2026
     const availableAmount = calculateAvailable(salary, date);
@@ -11,44 +25,66 @@ async function runExample() {
     console.log(`Sueldo Mensual: S/ ${salary.toFixed(2)}`);
     console.log(`Monto disponible para adelanto (calculado en JS): S/ ${availableAmount.toFixed(2)}`);
 
+    // --- Ejemplo de Acceso de Usuario ---
+    console.log('\n--- Probando Acceso de Usuario ---');
+
+    // Login exitoso
+    try {
+        const user = await loginUser('juanperez', 'password123'); // Usa la contraseña que hasheaste
+        if (user) {
+            console.log('Login exitoso para:', user.username);
+            
+            // Aquí podrías usar user.id para las solicitudes de adelanto
+        } else {
+            console.log('Login fallido: Credenciales incorrectas para juanperez');
+        }
+    } catch (error) {
+        console.error('Error durante el login de juanperez:', error.message);
+    }
+
+    // Login fallido (contraseña incorrecta)
+    try {
+        const user = await loginUser('juanperez', 'contrasena_incorrecta');
+        if (user) {
+            console.log('Login exitoso (esto no debería ocurrir):', user.username);
+        } else {
+            console.log('Login fallido: Credenciales incorrectas para juanperez con pass incorrecta');
+        }
+    } catch (error) {
+        console.error('Error durante el login (contraseña incorrecta):', error.message);
+    }
+
+    // Login fallido (usuario deshabilitado)
+    try {
+        const user = await loginUser('pedrolopez', 'password123');
+        if (user) {
+            console.log('Login exitoso (esto no debería ocurrir):', user.username);
+        } else {
+            console.log('Login fallido: Credenciales incorrectas para pedrolopez (deshabilitado)');
+        }
+    } catch (error) {
+        console.error('Error esperado para usuario deshabilitado (pedrolopez):', error.message);
+    }
+
+    // --- Fin del Ejemplo de Acceso de Usuario ---
+
+
     // Ejemplo de processAdvance (cliente Juan Perez, ID: 1)
     try {
-        console.log('\n--- Procesando Solicitud de Adelanto para Cliente ID 1 ---');
-        // Asegúrate de que el cliente 1 no tenga adelantos pendientes/desembolsados en DB antes de esta prueba manual
-        // DELETE FROM advances WHERE client_id = 1;
-        const requestedAmount = 900.00; // Monto a solicitar
-
-        const result = await processAdvance(1, requestedAmount);
+        const user = await loginUser('juanperez', 'password123'); // Usa la contraseña que hasheaste
+        if (user) {
+            console.log('Login exitoso para:', user.username);
+            console.log('\n--- Procesando Solicitud de Adelanto para Cliente ID 1 ---');
+            const requestedAmount = 900.00; // Monto a solicitar
+            const result = await processAdvance(user.id, requestedAmount);
         console.log('Solicitud de adelanto procesada exitosamente:', result);
+            // Aquí podrías usar user.id para las solicitudes de adelanto
+        } else {
+            console.log('Login fallido: Credenciales incorrectas para juanperez');
+        }
+        
     } catch (error) {
         console.error('Error al procesar la solicitud de adelanto:', error.message);
-    }
-
-    // Ejemplo de processAdvance (cliente Pedro Lopez, ID: 3 - deshabilitado)
-    try {
-        console.log('\n--- Intentando Procesar Solicitud para Cliente ID 3 (Deshabilitado) ---');
-        const result = await processAdvance(3, 500.00);
-        console.log('Solicitud procesada (esto no debería ocurrir):', result);
-    } catch (error) {
-        console.error('Error esperado al procesar para cliente deshabilitado:', error.message);
-    }
-
-    // Ejemplo de processAdvance (cliente Juan Perez, ID: 1 - con solicitud pendiente (si no se limpió la DB))
-    try {
-        console.log('\n--- Intentando Procesar Solicitud para Cliente ID 1 (con solicitud pendiente/desembolsada) ---');
-        const result = await processAdvance(1, 500.00);
-        console.log('Solicitud procesada (esto no debería ocurrir):', result);
-    } catch (error) {
-        console.error('Error esperado al procesar para cliente con solicitud previa:', error.message);
-    }
-
-    // Ejemplo de processAdvance (monto solicitado excede disponible)
-    try {
-        console.log('\n--- Intentando Procesar Solicitud para Cliente ID 2 (monto excede disponible) ---');
-        const result = await processAdvance(2, 5000.00); // Maria Gomez (sueldo 3500)
-        console.log('Solicitud procesada (esto no debería ocurrir):', result);
-    } catch (error) {
-        console.error('Error esperado al procesar por monto excedido:', error.message);
     }
 
     console.log('\n--- Fin del Ejemplo de Uso ---');
