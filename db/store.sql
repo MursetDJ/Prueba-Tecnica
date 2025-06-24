@@ -1,14 +1,5 @@
--- db/stored_procedure.sql
-
-USE financial_advance_system;
-
 DELIMITER $$
-
-
-CREATE PROCEDURE ProcessAdvanceRequest(
-    IN p_client_id INT,
-    IN p_requested_amount DECIMAL(10, 2)
-)
+CREATE DEFINER=``@`localhost` PROCEDURE `ProcessAdvanceRequest`(IN `p_client_id` INT, IN `p_requested_amount` DECIMAL(10,2))
 BEGIN
     DECLARE v_client_exists BOOLEAN DEFAULT FALSE;
     DECLARE v_client_status TINYINT;
@@ -21,6 +12,7 @@ BEGIN
     DECLARE v_current_day INT;
     DECLARE v_pending_or_disbursed_advance_exists BOOLEAN DEFAULT FALSE;
 
+    -- Constants for commission and IGV (adjust as per business rules)
     DECLARE v_commission_rate DECIMAL(5, 4) DEFAULT 0.05; -- 5%
     DECLARE v_igv_rate DECIMAL(5, 4) DEFAULT 0.18;       -- 18%
 
@@ -66,13 +58,13 @@ BEGIN
     SET v_daily_salary = v_monthly_salary / v_last_day_of_month;
 
     IF v_current_day = v_last_day_of_month THEN
-        SET v_days_worked = v_last_day_of_month;
+        SET v_days_worked = v_last_day_of_month; -- ¡Aquí se corrige!
     ELSE
-        SET v_days_worked = v_current_day - 1;
+        SET v_days_worked = v_current_day - 1; -- ¡Aquí se corrige!
     END IF;
 
     IF v_days_worked < 0 THEN
-        SET v_days_worked = 0;
+        SET v_days_worked = 0; -- ¡Aquí se corrige!
     END IF;
 
     SET v_available_calculated_amount = v_daily_salary * v_days_worked;
@@ -96,12 +88,14 @@ BEGIN
 
     -- Ensure amount to transfer is positive after deductions
     IF v_amount_to_transfer <= 0 THEN
-        SET v_error_message = 'El monto calculado a transferir es cero o negativo después de deducciones. Ajuste las tasas o solicite un monto mayor.';
+        SET v_error_message = 'El monto calculado a transferir es cero o negativo después de deducciones. Ajuste las tasas o solicite un monto mayor..';
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_error_message;
     END IF;
 
-    -- 6. Insert new record into advances with status = 1 (pending)
+    -- 6. Insert new record into advances with status = 1 (pending) AND
+    --    Update the client's balance in a single transaction
     START TRANSACTION;
+
 
     INSERT INTO advances (client_id, commission, amount_transferred, igv, status, requested_at)
     VALUES (p_client_id, v_commission, v_amount_to_transfer, v_igv, 1, NOW());
@@ -118,5 +112,4 @@ BEGIN
            v_available_calculated_amount AS maxAvailableAmount;
 
 END$$
-
 DELIMITER ;
